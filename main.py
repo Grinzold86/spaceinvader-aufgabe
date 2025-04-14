@@ -17,7 +17,8 @@ pygame.init()               # Pygame initialisieren
 
 # Fenstergröße definieren
 WIDTH, HEIGHT = 800, 600
-window = pygame.display.set_mode((WIDTH, HEIGHT))      # Fenster erstellen
+window = pygame.display.set_mode((WIDTH, HEIGHT))
+background = pygame.image.load('invaders.png')      # Fenster erstellen
 pygame.display.set_caption("Mini Space Invader")    # Fenstertitel setzen
 
 # Farben definieren
@@ -125,10 +126,14 @@ def displayHighscore():
 # Haupt-Spielschleife
 clock = pygame.time.Clock()  # Uhr für die Framerate
 running = True               # Steuerung der Schleife
+x = 0
 
 while running:
     clock.tick(60)          # Max. 60 Frames pro Sekunde
-    window.fill(BLACK)         # Hintergrund mit Schwarz füllen
+    window.blit(background, (x, 0))         # Hintergrund mit Schwarz füllen
+    x -= 1
+    if x == -700:
+        x = 0
 
     # Alle Events abfragen (z.B. Fenster schließen)
     for event in pygame.event.get():
