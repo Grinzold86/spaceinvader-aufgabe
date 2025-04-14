@@ -13,16 +13,16 @@ pygame.display.set_caption("Mini Space Invader")    # Fenstertitel setzen
 RED = (255, 0, 0)           # Rot für das Spieler-Quadrat
 BLACK = (0, 0, 0)           # Schwarz für den Hintergrund
 GREEN = (0, 255, 0)         # Grün für den Feind
-BLUE = (0, 0, 255)
+BLUE = (0, 0, 255)          # Blau für Projektile
 
-# Spieler-Eigenschaften (rotes Quadrat)
+# Spieler-Eigenschaften (rotes Rechteck)
 player_width = 40           # Breite des Spielers
 player_height = 20          # Höhe des Spielers
 player_x = WIDTH // 2 - player_width // 2           # Startposition (zentriert)
 player_y = HEIGHT - player_height - 30              # Etwas über dem unteren Rand
 player_speed = 5            # Geschwindowdigkeit pro Frame
 
-# Feinde-Eigenschaften (grüne Quadrate)
+# Feinde-Eigenschaften (grüne Rechtecke)
 enemies = []
 speed = 2
 speedCount = 1
@@ -36,7 +36,7 @@ def enemiesSpawn():
     global speedCount
     global speed
 
-    if count == 60:
+    if count == 60:             # erstellt alle 60 frames einen Gegner
         enemy = {"x": random.randint(0, WIDTH - enemy_width), "y": enemy_height + 20, "speed": speed}
         enemies.append(enemy)
         count = 0
@@ -58,6 +58,7 @@ def gameOver():
     pygame.time.wait(1000)
 
 
+# Funktion für die Erkennung der Tasteneingabe
 def keyInput():
     global running
     global player_x
@@ -69,15 +70,15 @@ def keyInput():
         player_x -= player_speed        # Spieler nach links bewegen
     if keys[pygame.K_RIGHT]:            # Wenn rechte Pfeiltaste gedrückt
         player_x += player_speed        # Spieler nach rechts bewegen
-    if keys[pygame.K_UP]:               # Wenn linke Pfeiltaste gedrückt
-        player_y -= player_speed        # Spieler nach links bewegen
-    if keys[pygame.K_DOWN]:             # Wenn rechte Pfeiltaste gedrückt
-        player_y += player_speed
+    if keys[pygame.K_UP]:               # Wenn obere Pfeiltaste gedrückt
+        player_y -= player_speed        # Spieler nach oben bewegen
+    if keys[pygame.K_DOWN]:             # Wenn untere Pfeiltaste gedrückt
+        player_y += player_speed        # Spieler nach unten bewegen
     if keys[pygame.K_ESCAPE]:           # Wenn "ESC" gedrückt wird
-        running = False                 # Schleife beenden
+        running = False                 # Spiel beenden
 
 
-# Erstellung von Schuessen
+# Projektil-Eigenschaften (blaue Rechtecke)
 ammunition = []
 rocket_width = 5
 rocket_height = 10
@@ -87,7 +88,7 @@ rocketCount = 10
 def projectiles():
     global rocketCount
 
-    if rocketCount == 10:
+    if rocketCount == 10:               # if-Verzweigung verhindert dass ein Strahl an Raketen gefeuert wird
         keys = pygame.key.get_pressed()
         if keys[pygame.K_SPACE]:
             rockets = {"x": (player_x + 20), "y": player_y, "speed": 4}
@@ -129,10 +130,10 @@ while running:
 
     # Spieler-Quadrat zeichnen
     pygame.draw.rect(window, RED, (player_x, player_y, player_width, player_height))
-  
+
     projectiles()
 
-    for rockets in ammunition:
+    for rockets in ammunition:          # Bewegt die Projektile nach vorne und prüft auf Kollision
         rockets["y"] -= rockets["speed"]
 
         rockets["y"] = max(0, min(HEIGHT - enemy_height, rockets["y"]))
@@ -148,11 +149,11 @@ while running:
                 ammunition.remove(rockets)
                 enemies.remove(enemy)
                 highscore += 1
- 
+
     # Gegner erstellen
     enemiesSpawn()
 
-    for enemy in enemies:
+    for enemy in enemies:                   # Bewegt die Gegner nach vorne und prüft auf Kollision
         enemy["y"] += enemy["speed"]
 
         enemy["y"] = max(0, min(HEIGHT - enemy_height, enemy["y"]))
