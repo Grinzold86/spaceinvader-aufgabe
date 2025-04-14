@@ -1,3 +1,14 @@
+###################################################################################################
+# Projekt:  spaceInvaders
+# Datei:    main.py
+# Autor:    Linus Wohlgemuth (Grinzold86)
+# Datum:    4.3.2025
+# Version:  1.0
+###################################################################################################
+# Beschreibung:
+# Diese Projekt dient zur Übung und soll die Möglichkeiten mit pygame aufzeigen
+###################################################################################################
+
 import pygame               # Pygame-Bibliothek importieren
 import sys                  # Für sys.exit()
 import random              # Für Zufallszahlen (z.B. Gegner-Positionen)
@@ -26,7 +37,7 @@ player_speed = 5            # Geschwindowdigkeit pro Frame
 enemies = []
 speed = 2
 speedCount = 1
-count = 60
+count = 40
 enemy_width = 40           # Breite des Feindes
 enemy_height = 20          # Höhe des Feindes
 
@@ -36,13 +47,15 @@ def enemiesSpawn():
     global speedCount
     global speed
 
-    if count == 60:             # erstellt alle 60 frames einen Gegner
+    if count == 40:             # erstellt alle 60 frames einen Gegner
         enemy = {"x": random.randint(0, WIDTH - enemy_width), "y": enemy_height + 20, "speed": speed}
         enemies.append(enemy)
         count = 0
 
-    if speedCount == 60:
+    if speedCount == 120:
         speed += 1
+        print("Erhöht")
+        speedCount = 0
 
     speedCount += 1
     count += 1
