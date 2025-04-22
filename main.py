@@ -2,192 +2,68 @@
 # Projekt:  spaceInvaders
 # Datei:    main.py
 # Autor:    Linus Wohlgemuth (Grinzold86)
-# Datum:    4.3.2025
-# Version:  1.0
+# Datum:    22.4.2025
+# Version:  1.1
 ###################################################################################################
 # Beschreibung:
-# Diese Projekt dient zur Übung und soll die Möglichkeiten mit pygame aufzeigen
+# Hauptdatei des Spiels, die alle Module zusammenführt und startet
 ###################################################################################################
 
-import pygame               # Pygame-Bibliothek importieren
-import sys                  # Für sys.exit()
-import random              # Für Zufallszahlen (z.B. Gegner-Positionen)
+import pygame
+import sys
 
-pygame.init()               # Pygame initialisieren
+# Import der Konfiguration
+from config import WIDTH, HEIGHT, WINDOW_TITLE
 
-# Fenstergröße definieren
-WIDTH, HEIGHT = 800, 600
-window = pygame.display.set_mode((WIDTH, HEIGHT))
-background = pygame.image.load('invaders.png')      # Fenster erstellen
-pygame.display.set_caption("Mini Space Invader")    # Fenstertitel setzen
+# Import der Utilities
+from utils.settings import settings, load_settings
+from utils.highscore import load_highscore
 
-# Farben definieren
-RED = (255, 0, 0)           # Rot für das Spieler-Quadrat
-BLACK = (0, 0, 0)           # Schwarz für den Hintergrund
-GREEN = (0, 255, 0)         # Grün für den Feind
-BLUE = (0, 0, 255)          # Blau für Projektile
+# Import der UI-Komponenten
+from ui.menu import show_main_menu
 
-# Spieler-Eigenschaften (rotes Rechteck)
-player_width = 40           # Breite des Spielers
-player_height = 20          # Höhe des Spielers
-player_x = WIDTH // 2 - player_width // 2           # Startposition (zentriert)
-player_y = HEIGHT - player_height - 30              # Etwas über dem unteren Rand
-player_speed = 5            # Geschwindowdigkeit pro Frame
+# Import des Spielmanagers
+from game.game_manager import GameManager
 
-# Feinde-Eigenschaften (grüne Rechtecke)
-enemies = []
-speed = 2
-speedCount = 1
-count = 40
-enemy_width = 40           # Breite des Feindes
-enemy_height = 20          # Höhe des Feindes
+def main():
+    """Hauptfunktion des Spiels"""
+    # Pygame initialisieren
+    pygame.init()
+    
+    # Einstellungen laden
+    load_settings()
+    load_highscore()
+    
+    # Fenster mit korrekten Flags erstellen basierend auf Einstellungen
+    flags = 0
+    if settings["vsync"]:
+        flags = pygame.HWSURFACE | pygame.DOUBLEBUF | pygame.SCALED
+    window = pygame.display.set_mode((WIDTH, HEIGHT), flags)
+    pygame.display.set_caption(WINDOW_TITLE)
+    
+    # Uhr für die Framerate
+    clock = pygame.time.Clock()
+    
+    # Spielmanager erstellen
+    game_manager = GameManager(window, clock)
+    
+    # Hauptprogrammschleife
+    while True:
+        # Lade den Highscore jedes Mal neu, wenn das Hauptmenü angezeigt wird
+        # Dies stellt sicher, dass der aktuelle Highscore nach einem Spiel angezeigt wird
+        load_highscore()
+        
+        # Zeigt das Hauptmenü und prüft, ob der Spieler starten möchte
+        if show_main_menu(window, clock):
+            # Wenn das Hauptmenü "True" zurückgibt, startet das Spiel
+            game_manager.start_game()
+        else:
+            # Wenn das Hauptmenü "False" zurückgibt, beendet das Spiel
+            break
+    
+    # Pygame sauber beenden und Programm schließen
+    pygame.quit()
+    sys.exit()
 
-
-def enemiesSpawn():
-    global count
-    global speedCount
-    global speed
-
-    if count == 40:             # erstellt alle 60 frames einen Gegner
-        enemy = {"x": random.randint(0, WIDTH - enemy_width), "y": enemy_height + 20, "speed": speed}
-        enemies.append(enemy)
-        count = 0
-
-    if speedCount == 120:
-        speed += 1
-        print("Erhöht")
-        speedCount = 0
-
-    speedCount += 1
-    count += 1
-
-
-def gameOver():
-    window.fill(BLACK)
-    font = pygame.font.SysFont("Courier New", 80)
-    text = font.render("Game Over", True, (255, 255, 255))
-    position = text.get_rect(center=(WIDTH // 2, HEIGHT // 2))
-    window.blit(text, position)
-    pygame.display.flip()
-    pygame.time.wait(1000)
-
-
-# Funktion für die Erkennung der Tasteneingabe
-def keyInput():
-    global running
-    global player_x
-    global player_y
-
-    # Tasteneingaben abfragen
-    keys = pygame.key.get_pressed()     # Aktuell gedrückte Tasten
-    if keys[pygame.K_LEFT]:             # Wenn linke Pfeiltaste gedrückt
-        player_x -= player_speed        # Spieler nach links bewegen
-    if keys[pygame.K_RIGHT]:            # Wenn rechte Pfeiltaste gedrückt
-        player_x += player_speed        # Spieler nach rechts bewegen
-    if keys[pygame.K_UP]:               # Wenn obere Pfeiltaste gedrückt
-        player_y -= player_speed        # Spieler nach oben bewegen
-    if keys[pygame.K_DOWN]:             # Wenn untere Pfeiltaste gedrückt
-        player_y += player_speed        # Spieler nach unten bewegen
-    if keys[pygame.K_ESCAPE]:           # Wenn "ESC" gedrückt wird
-        running = False                 # Spiel beenden
-
-
-# Projektil-Eigenschaften (blaue Rechtecke)
-ammunition = []
-rocket_width = 5
-rocket_height = 10
-rocketCount = 10
-
-
-def projectiles():
-    global rocketCount
-
-    if rocketCount == 10:               # if-Verzweigung verhindert dass ein Strahl an Raketen gefeuert wird
-        keys = pygame.key.get_pressed()
-        if keys[pygame.K_SPACE]:
-            rockets = {"x": (player_x + 20), "y": player_y, "speed": 4}
-            ammunition.append(rockets)
-        rocketCount = 0
-    rocketCount += 1
-
-
-# Highscore anzeigen
-highscore = 0
-
-
-def displayHighscore():
-    global highscore
-    font = pygame.font.SysFont("Courier New", 20)
-    score = font.render(f"Highscore: {highscore}", True, (255, 255, 255))
-    position = score.get_rect(topright=(WIDTH - 10, 10))
-    window.blit(score, position)
-
-
-# Haupt-Spielschleife
-clock = pygame.time.Clock()  # Uhr für die Framerate
-running = True               # Steuerung der Schleife
-x = 0
-
-while running:
-    clock.tick(60)          # Max. 60 Frames pro Sekunde
-    window.blit(background, (x, 0))         # Hintergrund mit Schwarz füllen
-    x -= 1
-    if x == -700:
-        x = 0
-
-    # Alle Events abfragen (z.B. Fenster schließen)
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:   # Wenn "X" gedrückt wird
-            running = False             # Schleife beenden
-
-    keyInput()
-
-    # Spieler innerhalb des Fensters halten
-    player_x = max(0, min(WIDTH - player_width, player_x))  # Begrenzung links/rechts
-    player_y = max(400, min(HEIGHT - player_height, player_y))  # Begrenzung oben/unten
-
-    # Spieler-Quadrat zeichnen
-    pygame.draw.rect(window, RED, (player_x, player_y, player_width, player_height))
-
-    projectiles()
-
-    for rockets in ammunition:          # Bewegt die Projektile nach vorne und prüft auf Kollision
-        rockets["y"] -= rockets["speed"]
-
-        rockets["y"] = max(0, min(HEIGHT - enemy_height, rockets["y"]))
-
-        if (rockets["y"] == (0)):
-            ammunition.remove(rockets)
-
-        pygame.draw.rect(window, BLUE, (rockets["x"], rockets["y"], rocket_width, rocket_height))
-
-        for enemy in enemies:
-            if (abs(rockets["x"] - enemy["x"]) < 40) and (abs(rockets["y"] - enemy["y"]) < 20):
-                print("TREFFER!")
-                ammunition.remove(rockets)
-                enemies.remove(enemy)
-                highscore += 1
-
-    # Gegner erstellen
-    enemiesSpawn()
-
-    for enemy in enemies:                   # Bewegt die Gegner nach vorne und prüft auf Kollision
-        enemy["y"] += enemy["speed"]
-
-        enemy["y"] = max(0, min(HEIGHT - enemy_height, enemy["y"]))
-
-        if (enemy["y"] == (HEIGHT - enemy_height)):
-            enemies.remove(enemy)
-
-        pygame.draw.rect(window, GREEN, (enemy["x"], enemy["y"], enemy_width, enemy_height))
-
-        if (abs(enemy["x"] - player_x) < 40) and (abs(enemy["y"] - player_y) < 20):
-            print("Kollision detektiert")
-            running = False
-            gameOver()
-
-    displayHighscore()
-    pygame.display.update()             # Anzeige aktualisieren
-
-pygame.quit()               # Pygame sauber beenden
-sys.exit()                  # Programm beenden
+if __name__ == "__main__":
+    main()
