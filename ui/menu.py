@@ -10,6 +10,7 @@
 ###################################################################################################
 
 import pygame
+import logging # Import logging
 from config import (
     WIDTH, HEIGHT, BLACK, WHITE, MENU_BACKGROUND_IMAGE, 
     FRAMERATE_OPTIONS
@@ -17,6 +18,9 @@ from config import (
 from ui.button import Button
 from utils.settings import settings, save_settings, load_settings
 from utils.highscore import highscore, load_highscore
+
+logger = logging.getLogger(__name__) # Module-level logger
+
 
 def show_main_menu(window, clock):
     """Zeigt das Hauptmenü an und gibt zurück, ob das Spiel gestartet werden soll"""
@@ -161,7 +165,7 @@ def show_settings_menu(window, clock):
                         if btn.rect.collidepoint(event.pos):
                             settings["framerate"] = rate
                             save_settings()
-                            print(f"Framerate auf {rate} FPS gesetzt")
+                            logger.info(f"Framerate auf {rate} FPS gesetzt") # Replaced print with logger.info
                             break
                 # VSync toggle
                 if vsync_btn.rect.collidepoint(event.pos):

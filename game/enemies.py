@@ -11,7 +11,10 @@
 
 import pygame
 import random
+import logging # Import logging
 from config import WIDTH, ENEMY_WIDTH, ENEMY_HEIGHT, ENEMY_SPAWN_INTERVAL, ENEMY_SPEED_UP_INTERVAL, GREEN
+
+logger = logging.getLogger(__name__) # Module-level logger
 
 class EnemyManager:
     """Klasse zur Verwaltung von Gegnern"""
@@ -35,7 +38,7 @@ class EnemyManager:
         # Überprüfe, ob die Geschwindigkeit erhöht werden soll
         if self.speed_count >= ENEMY_SPEED_UP_INTERVAL:
             self.speed += 1
-            print("Erhöht")
+            logger.info(f"Gegnergeschwindigkeit erhöht auf: {self.speed}") # Replaced print with logger.info
             self.speed_count = 0
             
         # Aktualisiere die Position der Gegner
@@ -69,7 +72,7 @@ class EnemyManager:
         """Überprüft, ob ein Projektil mit einem Gegner kollidiert und gibt zurück, ob eine Kollision stattfand"""
         for enemy in self.enemies[:]:  # Kopie der Liste verwenden
             if (abs(projectile["x"] - enemy["x"]) < 40) and (abs(projectile["y"] - enemy["y"]) < 20):
-                print("TREFFER!")
+                logger.info("Projektil hat Gegner getroffen!") # Replaced print with logger.info
                 if enemy in self.enemies:
                     self.enemies.remove(enemy)
                 return True
