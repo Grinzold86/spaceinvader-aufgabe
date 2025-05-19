@@ -11,6 +11,7 @@
 
 import pygame
 import sys
+import logging # Import the logging module
 
 from config import WIDTH, HEIGHT, BLACK, WHITE, BACKGROUND_IMAGE, BASE_FPS, SCROLL_SPEED
 from game.player import Player
@@ -18,6 +19,8 @@ from game.enemies import EnemyManager
 from game.projectiles import ProjectileManager
 from utils.settings import settings, save_settings
 from utils.highscore import highscore, save_highscore, update_highscore
+
+logger = logging.getLogger(__name__) # Logger instance for this module
 
 class GameManager:
     """Verwaltet den Spielablauf und koordiniert alle Spielelemente"""
@@ -58,7 +61,7 @@ class GameManager:
             # Event-Handling
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
-                    self.end_game(save=True)
+                    self.end_game(should_save_score=True) # Spielstand speichern beim Schließen
                     pygame.quit()
                     sys.exit()
             
@@ -68,15 +71,25 @@ class GameManager:
             self.clock.tick(current_framerate)
             
             # Berechne Delta-Zeit (dt) für framerate-unabhängige Bewegung
-            # Wenn show_fps aktiviert ist, verwende die tatsächliche verstrichene Zeit
-            if settings["show_fps"]:
-                # Verwende die tatsächlich verstrichene Zeit (in Sekunden)
-                actual_dt = self.clock.get_time() / 1000.0
-                if actual_dt > 0:  # Vermeide Division durch Null
-                    self.dt = actual_dt
+            # Standard-Ziel-dt basierend auf der aktuellen Framerate-Einstellung
+            if current_framerate > 0:
+                target_dt = 1.0 / current_framerate
             else:
-                # Standardwert basierend auf Ziel-Framerate
-                self.dt = 1 / current_framerate
+                # Fallback auf BASE_FPS, wenn current_framerate ungültig ist (z.B. 0)
+                target_dt = 1.0 / BASE_FPS # BASE_FPS sollte eine positive Konstante sein
+            
+            if settings["show_fps"]:
+                # Wenn FPS angezeigt werden, verwende die tatsächlich verstrichene Zeit.
+                # Dies kann zu variablerem dt führen, spiegelt aber die reale Performance wider.
+                actual_elapsed_time_sec = self.clock.get_time() / 1000.0
+                
+                # Verwende die tatsächliche Zeit, wenn sie positiv ist; andernfalls den Ziel-dt.
+                # Dies verhindert, dass dt Null wird, was zeitabhängige Aktualisierungen anhalten könnte.
+                self.dt = actual_elapsed_time_sec if actual_elapsed_time_sec > 0 else target_dt
+            else:
+                # Wenn FPS nicht angezeigt werden, verwende einen festen dt basierend auf der Ziel-Framerate.
+                # Dies sorgt für konsistentere und vorhersagbarere Physik.
+                self.dt = target_dt
             
             # Spiellogik aktualisieren
             self.update()
@@ -90,8 +103,8 @@ class GameManager:
         
         # Spieler-Eingabe und Bewegung
         if keys[pygame.K_ESCAPE]:
-            # Explizit save=True setzen, um sicherzustellen, dass der Highscore gespeichert wird
-            self.end_game(save=True)
+            # Explizit should_save_score=True setzen, um sicherzustellen, dass der Highscore gespeichert wird
+            self.end_game(should_save_score=True)
             return
         
         # Spieler bewegen
@@ -147,8 +160,8 @@ class GameManager:
         # Spieler mit Gegnern
         for enemy in self.enemy_manager.enemies[:]:
             if self.player.collides_with(enemy):
-                print("Kollision detektiert")
-                self.end_game(game_over=True, save=True)
+                logger.info("Kollision zwischen Spieler und Gegner detektiert.") # Replaced print with logger.info
+                self.end_game(game_over=True, should_save_score=True) # Corrected argument name
                 break
     
     def draw_score(self):
@@ -167,27 +180,30 @@ class GameManager:
             position = fps_text.get_rect(topleft=(10, 10))
             self.window.blit(fps_text, position)
     
-    def end_game(self, game_over=False, save=False):
-        """Beendet das Spiel"""
+    def end_game(self, game_over=False, should_save_score=False):
+        """Beendet das Spiel, optional speichert den Score und zeigt entsprechende Screens."""
         self.running = False
         
-        is_new_highscore = False
-        if save:
+        achieved_new_highscore = False
+        if should_save_score:
             # Aktualisiere Highscore wenn nötig und speichere ihn sofort
             if self.score > 0:  # Nur wenn Punkte erzielt wurden
-                is_new_highscore = update_highscore(self.score)
-                if is_new_highscore:
-                    print(f"Neuer Highscore: {self.score}")
+                achieved_new_highscore = update_highscore(self.score)
+                if achieved_new_highscore:
+                    logger.info(f"Neuer Highscore: {self.score}") # Replaced print with logger.info
                 else:
-                    print(f"Aktueller Score: {self.score}, Highscore bleibt: {highscore}")
+                    # highscore wird aus utils.highscore importiert und enthält den aktuellen Highscore-Wert
+                    logger.info(f"Aktueller Score: {self.score}, Highscore bleibt: {highscore}") # Replaced print with logger.info
                 
-                # Sicherstellen, dass der Highscore gespeichert wird
+                # Sicherstellen, dass der Highscore gespeichert wird, falls should_save_score True ist und Punkte erzielt wurden
                 save_highscore()
         
         if game_over:
             self.show_game_over()
-        elif save and is_new_highscore:
-            # Wenn kein Game-Over, aber ein neuer Highscore beim Beenden mit ESC, zeige Highscore-Mitteilung
+        elif achieved_new_highscore:
+            # Diese Bedingung impliziert, dass should_save_score True war, self.score > 0 und ein neuer Highscore erzielt wurde.
+            # Zeige eine Benachrichtigung, wenn es kein Game Over war, aber ein neuer Highscore erzielt wurde
+            # (z.B. Spiel per ESC beendet mit neuem Highscore).
             self.show_highscore_notification()
     
     def show_game_over(self):

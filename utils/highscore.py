@@ -11,7 +11,10 @@
 
 import os
 import json
+import logging # Import logging
 from config import HIGHSCORE_FILE
+
+logger = logging.getLogger(__name__) # Module-level logger
 
 # Globaler Highscore
 highscore = 0
@@ -25,7 +28,7 @@ def load_highscore():
                 data = json.load(f)
                 highscore = data.get("highscore", 0)
     except Exception as e:
-        print(f"Fehler beim Laden des Highscores: {e}")
+        logger.error(f"Fehler beim Laden des Highscores: {e}") # Replaced print with logger.error
         highscore = 0
 
 def save_highscore():
@@ -33,8 +36,9 @@ def save_highscore():
     try:
         with open(HIGHSCORE_FILE, "w") as f:
             json.dump({"highscore": highscore}, f)
+        logger.info(f"Highscore ({highscore}) erfolgreich in {HIGHSCORE_FILE} gespeichert.") # Added success log
     except Exception as e:
-        print(f"Fehler beim Speichern des Highscores: {e}")
+        logger.error(f"Fehler beim Speichern des Highscores: {e}") # Replaced print with logger.error
 
 def get_highscore():
     """Gibt den aktuellen Highscore zurück"""

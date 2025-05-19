@@ -11,6 +11,7 @@
 
 import pygame
 import sys
+import logging # Import the logging module
 
 # Import der Konfiguration
 from config import WIDTH, HEIGHT, WINDOW_TITLE
@@ -27,6 +28,14 @@ from game.game_manager import GameManager
 
 def main():
     """Hauptfunktion des Spiels"""
+    # Basic logging configuration
+    logging.basicConfig(level=logging.INFO, 
+                        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+                        datefmt='%Y-%m-%d %H:%M:%S')
+
+    logger = logging.getLogger(__name__)
+    logger.info("Spiel startet...")
+
     # Pygame initialisieren
     pygame.init()
     
@@ -64,6 +73,7 @@ def main():
     # Pygame sauber beenden und Programm schließen
     pygame.quit()
     sys.exit()
+    logger.info("Spiel beendet.")
 
 if __name__ == "__main__":
     main()
